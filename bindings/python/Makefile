@@ -463,6 +463,7 @@ endif # GGML_RPC
 
 OBJ_CUDA_TMPL      = $(patsubst %.cu,%.o,$(wildcard ../../ggml/src/ggml-cuda/template-instances/fattn-wmma*.cu))
 OBJ_CUDA_TMPL     += $(patsubst %.cu,%.o,$(wildcard ../../ggml/src/ggml-cuda/template-instances/mmq*.cu))
+OBJ_CUDA_TMPL     += $(patsubst %.cu,%.o,$(wildcard ../../ggml/src/ggml-cuda/opt*.cu))
 
 ifdef GGML_CUDA_FA_ALL_QUANTS
 	OBJ_CUDA_TMPL += $(patsubst %.cu,%.o,$(wildcard ../../ggml/src/ggml-cuda/template-instances/fattn-vec*.cu))
