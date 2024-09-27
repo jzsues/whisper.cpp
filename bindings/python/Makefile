@@ -691,7 +691,7 @@ $(BUILD_DIR)/ggml-cuda.o: \
 	$(wildcard ../../ggml/src/ggml-cuda/*.cuh)
 	$(HIPCC) $(CXXFLAGS) $(HIPFLAGS) -x hip -c -o $@ $<
 
-$(BUILD_DIR)/ggml-cuda/%.o: \
+../../ggml/src/ggml-cuda/%.o: \
 	../../ggml/src/ggml-cuda/%.cu \
 	../../ggml/include/ggml.h \
 	../../ggml/src/ggml-common.h \
