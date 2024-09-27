@@ -328,7 +328,7 @@ class WhisperCppVAD:
     def __init__(self, model: str, language='en', n_threads=4, translate=False) -> None:
         # self.silero_model = init_jit_model(os.path.abspath(
         #     os.path.join(os.path.dirname(__file__), 'silero', 'silero_vad.jit')))
-        self.silero_model = init_jit_model('/Users/jiangzhimin/Work/tikpop/whisper_vad/silero/silero_vad.jit')
+        self.silero_model = init_jit_model('./avd/silero_vad.jit')
         struct_params = _whisper_cpp.ffi.new('struct whisper_context_params *')
         struct_params.use_gpu = False
         struct_params.gpu_device = 0
