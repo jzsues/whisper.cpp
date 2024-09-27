@@ -3,12 +3,11 @@ BUILD_TARGETS = \
 	main \
 	bench \
 	quantize \
-	server \
-	tests/test-c.o
+	server
 
 # Binaries only useful for tests
 TEST_TARGETS = \
-	tests/test-backend-ops
+	tests/test-c.o
 
 # Deprecation aliases
 ifdef WHISPER_CUBLAS
@@ -141,8 +140,8 @@ else
 		command \
 		stream \
 		lsp \
-		talk \
 		talk-llama
+	# talk (TODO: disalbed)
 endif
 
 default: $(BUILD_TARGETS)
@@ -1087,10 +1086,12 @@ lsp: examples/lsp/lsp.cpp \
 	$(CXX) $(CXXFLAGS) $(CFLAGS_SDL) -c $< -o $(call GET_OBJ_FILE, $<)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS) $(LDFLAGS_SDL)
 
-talk: examples/talk/talk.cpp examples/talk/gpt-2.cpp \
-	$(OBJ_GGML) $(OBJ_WHISPER) $(OBJ_COMMON) $(OBJ_SDL)
-	$(CXX) $(CXXFLAGS) $(CFLAGS_SDL) -c $< -o $(call GET_OBJ_FILE, $<)
-	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS) $(LDFLAGS_SDL)
+# TODO: disabled until update
+#       https://github.com/ggerganov/whisper.cpp/issues/1818
+#talk: examples/talk/talk.cpp examples/talk/gpt-2.cpp \
+#	$(OBJ_GGML) $(OBJ_WHISPER) $(OBJ_COMMON) $(OBJ_SDL)
+#	$(CXX) $(CXXFLAGS) $(CFLAGS_SDL) -c $< -o $(call GET_OBJ_FILE, $<)
+#	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS) $(LDFLAGS_SDL)
 
 talk-llama: examples/talk-llama/talk-llama.cpp examples/talk-llama/llama.cpp examples/talk-llama/llama-vocab.cpp examples/talk-llama/llama-grammar.cpp examples/talk-llama/llama-sampling.cpp examples/talk-llama/unicode.cpp examples/talk-llama/unicode-data.cpp \
 	$(OBJ_GGML) $(OBJ_WHISPER) $(OBJ_COMMON) $(OBJ_SDL)
@@ -1105,11 +1106,6 @@ tests: $(TEST_TARGETS)
 
 tests/test-c.o: tests/test-c.c include/whisper.h
 	$(CC) $(CFLAGS) -c $(filter-out %.h,$^) -o $@
-
-tests/test-backend-ops: tests/test-backend-ops.cpp \
-	$(OBJ_GGML)
-	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
-	$(CXX) $(CXXFLAGS) $(filter-out %.h $<,$^) $(call GET_OBJ_FILE, $<) -o $@ $(LDFLAGS)
 
 #
 # Audio samples
