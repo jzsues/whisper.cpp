@@ -1045,6 +1045,13 @@ clean:
 # Helper function that replaces .c, .cpp, and .cu file endings with .o:
 GET_OBJ_FILE = $(patsubst %.c,%.o,$(patsubst %.cpp,%.o,$(patsubst %.cu,%.o,$(1))))
 
+s_lib: \
+	$(LIB_WHISPER_S)
+
+
+d_lib: \
+	$(LIB_WHISPER)
+
 main: examples/main/main.cpp \
 	$(OBJ_GGML) $(OBJ_WHISPER) $(OBJ_COMMON)
 	$(CXX) $(CXXFLAGS) -c $< -o $(call GET_OBJ_FILE, $<)
