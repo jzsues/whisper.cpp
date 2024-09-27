@@ -27,7 +27,7 @@ def load_audio(filename):
     rate, data = scipy.io.wavfile.read(filename, mmap=True)
     if rate != SAMPLE_RATE:
         raise ValueError('Not 16k wav file')
-    bit_range = 1 << ((data.dtype.itemsize*8) - 1)
+    bit_range = 1 << ((data.dtype.itemsize * 8) - 1)
     data = data.astype('float32')
     if len(data.shape) > 1:
         data = data.mean(axis=1)
@@ -43,16 +43,15 @@ def init_jit_model(model_path: str, device=torch.device('cpu')):
 
 
 def silero_get_speech_timestamps(
-    audio: torch.Tensor, model,
-    threshold: float = 0.5, sampling_rate: int = 16000,
-    min_speech_duration_ms: int = 250,
-    max_speech_duration_s: float = float('inf'),
-    min_silence_duration_ms: int = 100,
-    window_size_samples: int = 512,
-    speech_pad_ms: int = 30,
-    return_ms: bool = False
+        audio: torch.Tensor, model,
+        threshold: float = 0.5, sampling_rate: int = 16000,
+        min_speech_duration_ms: int = 250,
+        max_speech_duration_s: float = float('inf'),
+        min_silence_duration_ms: int = 100,
+        window_size_samples: int = 512,
+        speech_pad_ms: int = 30,
+        return_ms: bool = False
 ):
-
     """
     This method is used for splitting long audios into speech chunks using silero VAD
 
@@ -119,9 +118,11 @@ def silero_get_speech_timestamps(
         step = 1
 
     if sampling_rate == 8000 and window_size_samples > 768:
-        warnings.warn('window_size_samples is too big for 8000 sampling_rate! Better set window_size_samples to 256, 512 or 768 for 8000 sample rate!')
+        warnings.warn(
+            'window_size_samples is too big for 8000 sampling_rate! Better set window_size_samples to 256, 512 or 768 for 8000 sample rate!')
     if window_size_samples not in [256, 512, 768, 1024, 1536]:
-        warnings.warn('Unusual window_size_samples! Supported window_size_samples:\n - [512, 1024, 1536] for 16000 sampling_rate\n - [256, 512, 768] for 8000 sampling_rate')
+        warnings.warn(
+            'Unusual window_size_samples! Supported window_size_samples:\n - [512, 1024, 1536] for 16000 sampling_rate\n - [256, 512, 768] for 8000 sampling_rate')
 
     model.reset_states()
     min_speech_samples = sampling_rate * min_speech_duration_ms / 1000
@@ -144,26 +145,26 @@ def silero_get_speech_timestamps(
     speeches = []
     current_speech = {}
     neg_threshold = threshold - 0.15
-    temp_end = 0 # to save potential segment end (and tolerate some silence)
-    prev_end = next_start = 0 # to save potential segment limits in case of maximum segment size reached
+    temp_end = 0  # to save potential segment end (and tolerate some silence)
+    prev_end = next_start = 0  # to save potential segment limits in case of maximum segment size reached
 
     for i, speech_prob in enumerate(speech_probs):
         if (speech_prob >= threshold) and temp_end:
             temp_end = 0
             if next_start < prev_end:
-               next_start = window_size_samples * i
+                next_start = window_size_samples * i
 
         if (speech_prob >= threshold) and not triggered:
             triggered = True
             current_speech['start'] = window_size_samples * i
             continue
-        
+
         if triggered and (window_size_samples * i) - current_speech['start'] > max_speech_samples:
             if prev_end:
                 current_speech['end'] = prev_end
                 speeches.append(current_speech)
                 current_speech = {}
-                if next_start < prev_end: # previously reached silence (< neg_thres) and is still not speech (< thres)
+                if next_start < prev_end:  # previously reached silence (< neg_thres) and is still not speech (< thres)
                     triggered = False
                 else:
                     current_speech['start'] = next_start
@@ -175,12 +176,12 @@ def silero_get_speech_timestamps(
                 prev_end = next_start = temp_end = 0
                 triggered = False
                 continue
-                
 
         if (speech_prob < neg_threshold) and triggered:
             if not temp_end:
                 temp_end = window_size_samples * i
-            if ((window_size_samples * i) - temp_end) > min_silence_samples_at_max_speech : # condition to avoid cutting in very short silence
+            if ((
+                        window_size_samples * i) - temp_end) > min_silence_samples_at_max_speech:  # condition to avoid cutting in very short silence
                 prev_end = temp_end
             if (window_size_samples * i) - temp_end < min_silence_samples:
                 continue
@@ -201,13 +202,13 @@ def silero_get_speech_timestamps(
         if i == 0:
             speech['start'] = int(max(0, speech['start'] - speech_pad_samples))
         if i != len(speeches) - 1:
-            silence_duration = speeches[i+1]['start'] - speech['end']
+            silence_duration = speeches[i + 1]['start'] - speech['end']
             if silence_duration < 2 * speech_pad_samples:
                 speech['end'] += int(silence_duration // 2)
-                speeches[i+1]['start'] = int(max(0, speeches[i+1]['start'] - silence_duration // 2))
+                speeches[i + 1]['start'] = int(max(0, speeches[i + 1]['start'] - silence_duration // 2))
             else:
                 speech['end'] = int(min(audio_length_samples, speech['end'] + speech_pad_samples))
-                speeches[i+1]['start'] = int(max(0, speeches[i+1]['start'] - speech_pad_samples))
+                speeches[i + 1]['start'] = int(max(0, speeches[i + 1]['start'] - speech_pad_samples))
         else:
             speech['end'] = int(min(audio_length_samples, speech['end'] + speech_pad_samples))
 
@@ -240,8 +241,8 @@ def segments_to_srt(segments, fp):
 
 
 def merge_vad_segments(
-    segments, min_interval_ms=250,
-    min_input_segment_ms=250, min_output_segment_ms=1000, 
+        segments, min_interval_ms=250,
+        min_input_segment_ms=250, min_output_segment_ms=1000,
 ):
     last_end = None
     for segment in segments:
@@ -249,8 +250,8 @@ def merge_vad_segments(
         if min_input_segment_ms <= length < min_output_segment_ms:
             diff = (min_output_segment_ms - length) / 2
             mid = (segment['start'] + segment['end']) / 2
-            segment['start'] = max(0, int(mid - min_output_segment_ms/2))
-            segment['end'] = int(mid + min_output_segment_ms/2)
+            segment['start'] = max(0, int(mid - min_output_segment_ms / 2))
+            segment['end'] = int(mid + min_output_segment_ms / 2)
     fixed_speeches = []
     for segment in segments:
         if last_end and segment['end'] < last_end:
@@ -266,7 +267,8 @@ def merge_vad_segments(
 def text_postprocess(text, language):
     if language == 'zh':
         import zhconv
-        text = text.replace(',', '，').replace(';', '；').replace('(', '（').replace(')', '）').replace('?', '？').replace('!', '！')
+        text = text.replace(',', '，').replace(';', '；').replace('(', '（').replace(')', '）').replace('?', '？').replace(
+            '!', '！')
         text = zhconv.convert(text, 'zh-hans')
         if re_filter_zh.search(text):
             return ''
@@ -278,8 +280,8 @@ class WhisperStuck(RuntimeError):
 
 
 def fix_whisper_timestamps(
-    last_segment, segments, result_offset_ms: int, start_ms: int, end_ms: int,
-    overlap_chars=6, is_retry=False
+        last_segment, segments, result_offset_ms: int, start_ms: int, end_ms: int,
+        overlap_chars=6, is_retry=False
 ):
     fixed = []
     if last_segment:
@@ -316,7 +318,6 @@ def fix_whisper_timestamps(
 
 
 class WhisperCppVAD:
-
     best_of = 5
     beam_size = -1
     word_thold = 0.01
@@ -325,13 +326,13 @@ class WhisperCppVAD:
 
     silero_thold = 0.35
 
-    def __init__(self, model: str, language='en', n_threads=4, translate=False) -> None:
+    def __init__(self, model: str, language='en', n_threads=4, translate=False, use_gpu=False, gpu_device=0) -> None:
         # self.silero_model = init_jit_model(os.path.abspath(
         #     os.path.join(os.path.dirname(__file__), 'silero', 'silero_vad.jit')))
         self.silero_model = init_jit_model('./vad/silero_vad.jit')
         struct_params = _whisper_cpp.ffi.new('struct whisper_context_params *')
-        struct_params.use_gpu = False
-        struct_params.gpu_device = 0
+        struct_params.use_gpu = use_gpu
+        struct_params.gpu_device = gpu_device
         self.ctx = _whisper_cpp.lib.whisper_init_from_file_with_params(
             _whisper_cpp.ffi.new("char[]", model.encode('utf-8')),
             struct_params[0]
@@ -360,7 +361,7 @@ class WhisperCppVAD:
         self.params.offset_ms = 0
         self.params.duration_ms = 0
         self.last_segment = None
-        self.max_context_time = 3*1000
+        self.max_context_time = 3 * 1000
 
     def transcribe_file(self, audio_data):
         speeches = silero_get_speech_timestamps(
@@ -375,13 +376,13 @@ class WhisperCppVAD:
 
         for seg_start, seg_end in tqdm(segments, desc='Transcribing'):
             # print(seg_start, seg_end)
-            #if seg_end - seg_start < 500:
-                #continue
+            # if seg_end - seg_start < 500:
+            # continue
             try:
                 results = self.transcribe_segment(audio_data, seg_start, seg_end)
             except WhisperStuck:
                 print('[%s] Whisper repeated output! retry transcribe.' %
-                    format_srt_timestamp(seg_start))
+                      format_srt_timestamp(seg_start))
                 results = self.transcribe_segment(
                     audio_data, seg_start, seg_end, True)
             # retry
@@ -411,7 +412,7 @@ class WhisperCppVAD:
         # self.params.offset_ms = offset_ms
         # self.params.duration_ms = duration_ms
         if (is_retry or (self.last_segment and
-            start_ms < self.last_segment[1] + self.max_context_time
+                         start_ms < self.last_segment[1] + self.max_context_time
         )):
             self.params.no_context = True
         self.params.prompt_tokens = _whisper_cpp.ffi.NULL
@@ -428,7 +429,7 @@ class WhisperCppVAD:
             t0 = _whisper_cpp.lib.whisper_full_get_segment_t0(self.ctx, i)
             t1 = _whisper_cpp.lib.whisper_full_get_segment_t1(self.ctx, i)
             txt_str = bytes(_whisper_cpp.ffi.string(txt)).decode('utf-8', errors='ignore')
-            segments.append((t0*10, t1*10, txt_str))
+            segments.append((t0 * 10, t1 * 10, txt_str))
         # print(segments)
         results = fix_whisper_timestamps(
             self.last_segment, segments, start_ms, start_ms, end_ms, is_retry)
@@ -463,10 +464,11 @@ if __name__ == '__main__':
     parser.add_argument("-b", "--best-of", type=int, help="number of best candidates to keep")
     parser.add_argument("-s", "--beam-size", type=int, help="beam size for beam search")
     parser.add_argument("-o", "--output", help=".srt output file")
+    parser.add_argument("-g", "--gpu", type=bool, default=False, help="use gpu")
     parser.add_argument("file", help="Input audio file. If --ffmpeg is not used, the input must be 16k wav file")
     args = parser.parse_args()
 
-    whisper = WhisperCppVAD(args.model, args.language, args.threads, args.translate)
+    whisper = WhisperCppVAD(args.model, args.language, args.threads, args.translate, args.gpu)
     if args.best_of is not None:
         whisper.best_of = args.best_of
     if args.beam_size is not None:
