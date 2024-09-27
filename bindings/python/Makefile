@@ -463,7 +463,6 @@ endif # GGML_RPC
 
 OBJ_CUDA_TMPL      = $(patsubst %.cu,%.o,$(wildcard ../../ggml/src/ggml-cuda/template-instances/fattn-wmma*.cu))
 OBJ_CUDA_TMPL     += $(patsubst %.cu,%.o,$(wildcard ../../ggml/src/ggml-cuda/template-instances/mmq*.cu))
-OBJ_CUDA_TMPL     += $(patsubst %.cu,%.o,$(wildcard ../../ggml/src/ggml-cuda/opt*.cu))
 
 ifdef GGML_CUDA_FA_ALL_QUANTS
 	OBJ_CUDA_TMPL += $(patsubst %.cu,%.o,$(wildcard ../../ggml/src/ggml-cuda/template-instances/fattn-vec*.cu))
@@ -585,7 +584,7 @@ define NVCC_COMPILE
 endef # NVCC_COMPILE
 endif # JETSON_EOL_MODULE_DETECT
 
-$(BUILD_DIR)/ggml-cuda/%.o: \
+../../ggml/src/ggml-cuda/%.o: \
 	../../ggml/src/ggml-cuda/%.cu \
 	../../ggml/include/ggml.h \
 	../../ggml/src/ggml-common.h \
