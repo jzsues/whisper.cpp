@@ -52,3 +52,9 @@ cmake-build-debug/
 .cxx/
 .gradle/
 local.properties
+/bindings/python/include/
+/bindings/python/lib/
+/bindings/python/_whisper_cpp.c
+/bindings/python/*.o
+/bindings/python/*.a
+/bindings/python/*.so
