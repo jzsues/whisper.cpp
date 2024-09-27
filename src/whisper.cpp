@@ -7482,6 +7482,6 @@ static void whisper_log_internal(ggml_log_level level, const char * format, ...)
 static void whisper_log_callback_default(ggml_log_level level, const char * text, void * user_data) {
     (void) level;
     (void) user_data;
-    fputs(text, stderr);
-    fflush(stderr);
+    fputs(text, stdout);
+    fflush(stdout);
 }

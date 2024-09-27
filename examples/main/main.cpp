@@ -286,7 +286,7 @@ static void whisper_print_progress_callback(struct whisper_context * /*ctx*/, st
     int * progress_prev  = &(((whisper_print_user_data *) user_data)->progress_prev);
     if (progress >= *progress_prev + progress_step) {
         *progress_prev += progress_step;
-        fprintf(stderr, "%s: progress = %3d%%\n", __func__, progress);
+        fprintf(stdout, "%s: progress = %3d%%\n", __func__, progress);
     }
 }
 
@@ -366,7 +366,7 @@ static bool output_txt(struct whisper_context * ctx, const char * fname, const w
         return false;
     }
 
-    fprintf(stderr, "%s: saving output to '%s'\n", __func__, fname);
+    fprintf(stdout, "%s: saving output to '%s'\n", __func__, fname);
 
     const int n_segments = whisper_full_n_segments(ctx);
     for (int i = 0; i < n_segments; ++i) {
@@ -393,7 +393,7 @@ static bool output_vtt(struct whisper_context * ctx, const char * fname, const w
         return false;
     }
 
-    fprintf(stderr, "%s: saving output to '%s'\n", __func__, fname);
+    fprintf(stdout, "%s: saving output to '%s'\n", __func__, fname);
 
     fout << "WEBVTT\n\n";
 
@@ -425,7 +425,7 @@ static bool output_srt(struct whisper_context * ctx, const char * fname, const w
         return false;
     }
 
-    fprintf(stderr, "%s: saving output to '%s'\n", __func__, fname);
+    fprintf(stdout, "%s: saving output to '%s'\n", __func__, fname);
 
     const int n_segments = whisper_full_n_segments(ctx);
     for (int i = 0; i < n_segments; ++i) {
@@ -517,7 +517,7 @@ static bool output_csv(struct whisper_context * ctx, const char * fname, const w
         return false;
     }
 
-    fprintf(stderr, "%s: saving output to '%s'\n", __func__, fname);
+    fprintf(stdout, "%s: saving output to '%s'\n", __func__, fname);
 
     const int n_segments = whisper_full_n_segments(ctx);
     fout << "start,end,";
@@ -547,7 +547,7 @@ static bool output_csv(struct whisper_context * ctx, const char * fname, const w
 
 static bool output_score(struct whisper_context * ctx, const char * fname, const whisper_params & /*params*/, std::vector<std::vector<float>> /*pcmf32s*/) {
     std::ofstream fout(fname);
-    fprintf(stderr, "%s: saving output to '%s'\n", __func__, fname);
+    fprintf(stdout, "%s: saving output to '%s'\n", __func__, fname);
 
     const int n_segments = whisper_full_n_segments(ctx);
     // fprintf(stderr,"segments: %d\n",n_segments);
@@ -655,7 +655,7 @@ static bool output_json(
         return false;
     }
 
-    fprintf(stderr, "%s: saving output to '%s'\n", __func__, fname);
+    fprintf(stdout, "%s: saving output to '%s'\n", __func__, fname);
     start_obj(nullptr);
         value_s("systeminfo", whisper_print_system_info(), false);
         start_obj("model");
@@ -738,7 +738,7 @@ static bool output_json(
 static bool output_wts(struct whisper_context * ctx, const char * fname, const char * fname_inp, const whisper_params & params, float t_sec, std::vector<std::vector<float>> pcmf32s) {
     std::ofstream fout(fname);
 
-    fprintf(stderr, "%s: saving output to '%s'\n", __func__, fname);
+    fprintf(stdout, "%s: saving output to '%s'\n", __func__, fname);
 
     static const char * font = params.font_path.c_str();
 
@@ -855,7 +855,7 @@ static bool output_wts(struct whisper_context * ctx, const char * fname, const c
 
     fout.close();
 
-    fprintf(stderr, "%s: run 'source %s' to generate karaoke video\n", __func__, fname);
+    fprintf(stdout, "%s: run 'source %s' to generate karaoke video\n", __func__, fname);
 
     return true;
 }
@@ -867,7 +867,7 @@ static bool output_lrc(struct whisper_context * ctx, const char * fname, const w
         return false;
     }
 
-    fprintf(stderr, "%s: saving output to '%s'\n", __func__, fname);
+    fprintf(stdout, "%s: saving output to '%s'\n", __func__, fname);
 
     fout << "[by:whisper.cpp]\n";
 
@@ -1031,9 +1031,9 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "error: failed to parse grammar \"%s\"\n", params.grammar.c_str());
             return 4;
         } else {
-            fprintf(stderr, "%s: grammar:\n", __func__);
-            grammar_parser::print_grammar(stderr, grammar);
-            fprintf(stderr, "\n");
+            fprintf(stdout, "%s: grammar:\n", __func__);
+            grammar_parser::print_grammar(stdout, grammar);
+            fprintf(stdout, "\n");
         }
     }
 
@@ -1062,13 +1062,13 @@ int main(int argc, char ** argv) {
 
         if (!params.no_prints) {
             // print system information
-            fprintf(stderr, "\n");
-            fprintf(stderr, "system_info: n_threads = %d / %d | %s\n",
+            fprintf(stdout, "\n");
+            fprintf(stdout, "system_info: n_threads = %d / %d | %s\n",
                     params.n_threads*params.n_processors, std::thread::hardware_concurrency(), whisper_print_system_info());
 
             // print some info about the processing
-            fprintf(stderr, "\n");
-            fprintf(stderr, "%s: processing '%s' (%d samples, %.1f sec), %d threads, %d processors, %d beams + best of %d, lang = %s, task = %s, %stimestamps = %d ...\n",
+            fprintf(stdout, "\n");
+            fprintf(stdout, "%s: processing '%s' (%d samples, %.1f sec), %d threads, %d processors, %d beams + best of %d, lang = %s, task = %s, %stimestamps = %d ...\n",
                     __func__, fname_inp.c_str(), int(pcmf32.size()), float(pcmf32.size())/WHISPER_SAMPLE_RATE,
                     params.n_threads, params.n_processors, params.beam_size, params.best_of,
                     params.language.c_str(),
@@ -1076,7 +1076,7 @@ int main(int argc, char ** argv) {
                     params.tinydiarize ? "tdrz = 1, " : "",
                     params.no_timestamps ? 0 : 1);
 
-            fprintf(stderr, "\n");
+            fprintf(stdout, "\n");
         }
 
         // run the inference
