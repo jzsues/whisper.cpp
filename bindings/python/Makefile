@@ -738,8 +738,9 @@ $(BUILD_DIR)/ggml-metal-embed.o: \
 	../../ggml/src/ggml-metal.metal \
 	../../ggml/src/ggml-common.h
 	@echo "Embedding Metal library"
-	@sed -e '/#include "ggml-common.h"/r ggml/src/ggml-common.h' -e '/#include "ggml-common.h"/d' < ../../ggml/src/ggml-metal.metal > ../../ggml/src/ggml-metal-embed.metal
+	@sed -e '/#include "ggml-common.h"/r ../../ggml/src/ggml-common.h' -e '/#include "ggml-common.h"/d' < ../../ggml/src/ggml-metal.metal > ../../ggml/src/ggml-metal-embed.metal
 	$(eval TEMP_ASSEMBLY=$(shell mktemp))
+	@echo "TEMP_ASSEMBLY: $(TEMP_ASSEMBLY)"
 	@echo ".section __DATA, __ggml_metallib"            >  $(TEMP_ASSEMBLY)
 	@echo ".globl _ggml_metallib_start"                 >> $(TEMP_ASSEMBLY)
 	@echo "_ggml_metallib_start:"                       >> $(TEMP_ASSEMBLY)
@@ -771,7 +772,15 @@ OBJ_GGML += \
 OBJ_WHISPER += \
 	$(BUILD_DIR)/whisper.o
 
-OBJ_ALL = $(OBJ_GGML) $(OBJ_WHISPER) $(OBJ_SDL)
+OBJ_COMMON += \
+	$(BUILD_DIR)/common.o \
+	$(BUILD_DIR)/common-ggml.o \
+	$(BUILD_DIR)/grammar-parser.o
+
+OBJ_SDL += \
+	$(BUILD_DIR)/common-sdl.o
+
+OBJ_ALL = $(OBJ_GGML) $(OBJ_WHISPER) $(OBJ_COMMON) $(OBJ_SDL)
 
 LIB_GGML   = lib/$(LIB_PRE)ggml$(DSO_EXT)
 LIB_GGML_S = lib/$(LIB_PRE)ggml.a
@@ -779,8 +788,14 @@ LIB_GGML_S = lib/$(LIB_PRE)ggml.a
 LIB_WHISPER   = lib/$(LIB_PRE)whisper$(DSO_EXT)
 LIB_WHISPER_S = lib/$(LIB_PRE)whisper.a
 
-LIB_ALL   = $(LIB_GGML)   $(LIB_WHISPER)
-LIB_ALL_S = $(LIB_GGML_S) $(LIB_WHISPER_S)
+LIB_COMMON   = lib/$(LIB_PRE)common$(DSO_EXT)
+LIB_COMMON_S = lib/$(LIB_PRE)common.a
+
+LIB_COMMON_SDL   = lib/$(LIB_PRE)common-sdl$(DSO_EXT)
+LIB_COMMON_SDL_S = lib/$(LIB_PRE)common-sdl.a
+
+LIB_ALL   = $(LIB_GGML)   $(LIB_WHISPER) $(LIB_COMMON) $(LIB_COMMON_SDL)
+LIB_ALL_S = $(LIB_GGML_S) $(LIB_WHISPER_S) $(LIB_COMMON_S) $(LIB_COMMON_SDL_S)
 
 GF_CC := $(CC)
 include ../../scripts/get-flags.mk
@@ -820,6 +835,19 @@ $(info I NVCCFLAGS: $(NVCCFLAGS))
 $(info I LDFLAGS:   $(LDFLAGS))
 $(info I CC:        $(shell $(CC)   --version | head -n 1))
 $(info I CXX:       $(shell $(CXX)  --version | head -n 1))
+
+ifdef GGML_METAL
+$(info I METAL:     $(shell xcrun --show-sdk-path --sdk macosx)/System/Library/Frameworks/Metal.framework)
+endif
+
+ifdef GGML_METAL_EMBED_LIBRARY
+$(info I METAL_EMBED:     Embedding Metal library)
+endif
+
+ifdef WHISPER_COREML
+$(info I COREML:    $(shell xcrun --show-sdk-path --sdk macosx)/System/Library/Frameworks/CoreML.framework)
+endif
+
 ifdef GGML_CUDA
 $(info I NVCC:      $(shell $(NVCC) --version | tail -n 1))
 CUDA_VERSION := $(shell $(NVCC) --version | grep -oP 'release (\K[0-9]+\.[0-9])')
@@ -920,6 +948,7 @@ $(LIB_GGML_S): \
 	$(OBJ_GGML)
 	ar rcs $(LIB_GGML_S) $^
 
+
 # whisper
 
 $(BUILD_DIR)/whisper.o: \
@@ -943,6 +972,53 @@ $(LIB_WHISPER_S): \
 	$(OBJ_GGML)
 	ar rcs $(LIB_WHISPER_S) $^
 
+
+# common
+
+$(BUILD_DIR)/common.o: \
+	../../examples/common.cpp \
+	../../examples/common.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/grammar-parser.o: \
+	../../examples/grammar-parser.cpp \
+	../../examples/grammar-parser.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/common-ggml.o: \
+	../../examples/common-ggml.cpp \
+	../../examples/common-ggml.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(LIB_COMMON): \
+	$(OBJ_COMMON) \
+	$(LIB_GGML)
+	$(CXX) $(CXXFLAGS) -shared -fPIC -o $@ $^ $(LDFLAGS)
+
+$(LIB_COMMON_S): \
+	$(OBJ_COMMON) \
+	$(LIB_GGML_S)
+	ar rcs $(LIB_COMMON_S) $^
+
+
+
+# common-sdl
+
+CFLAGS_SDL=$(shell sdl2-config --cflags)
+LDFLAGS_SDL=$(shell sdl2-config --libs)
+
+$(BUILD_DIR)/common-sdl.o: \
+	../../examples/common-sdl.cpp \
+	../../examples/common-sdl.h
+	$(CXX) $(CXXFLAGS) $(CFLAGS_SDL) -c $< -o $@
+
+$(LIB_COMMON_SDL): \
+	$(OBJ_SDL)
+	$(CXX) $(CXXFLAGS) -shared -fPIC -o $@ $^ $(LDFLAGS) $(LDFLAGS_SDL)
+
+$(LIB_COMMON_SDL_S): \
+	$(OBJ_SDL)
+	ar rcs $(LIB_COMMON_SDL_S) $^
 
 # $< is the first prerequisite, i.e. the source file.
 # Explicitly compile this to an object file so that it can be cached with ccache.
@@ -968,10 +1044,10 @@ prepare:
 	cp ../../include/*.h include/
 
 s_lib: \
-	$(LIB_ALL_S)
+	$(LIB_WHISPER_S)
 
 d_lib: \
-	$(LIB_ALL)
+	$(LIB_WHISPER)
 
 clean:
 	rm -vrf *.dot $(BUILD_TARGETS) $(TEST_TARGETS)

@@ -759,6 +759,7 @@ ggml/src/ggml-metal-embed.o: \
 	@echo "Embedding Metal library"
 	@sed -e '/#include "ggml-common.h"/r ggml/src/ggml-common.h' -e '/#include "ggml-common.h"/d' < ggml/src/ggml-metal.metal > ggml/src/ggml-metal-embed.metal
 	$(eval TEMP_ASSEMBLY=$(shell mktemp))
+	@echo "TEMP_ASSEMBLY: $(TEMP_ASSEMBLY)"
 	@echo ".section __DATA, __ggml_metallib"            >  $(TEMP_ASSEMBLY)
 	@echo ".globl _ggml_metallib_start"                 >> $(TEMP_ASSEMBLY)
 	@echo "_ggml_metallib_start:"                       >> $(TEMP_ASSEMBLY)
@@ -852,6 +853,18 @@ $(info I NVCCFLAGS: $(NVCCFLAGS))
 $(info I LDFLAGS:   $(LDFLAGS))
 $(info I CC:        $(shell $(CC)   --version | head -n 1))
 $(info I CXX:       $(shell $(CXX)  --version | head -n 1))
+ifdef GGML_METAL
+$(info I METAL:     $(shell xcrun --show-sdk-path --sdk macosx)/System/Library/Frameworks/Metal.framework)
+endif
+
+ifdef GGML_METAL_EMBED_LIBRARY
+$(info I METAL_EMBED:     Embedding Metal library)
+endif
+
+ifdef WHISPER_COREML
+$(info I COREML:    $(shell xcrun --show-sdk-path --sdk macosx)/System/Library/Frameworks/CoreML.framework)
+endif
+
 ifdef GGML_CUDA
 $(info I NVCC:      $(shell $(NVCC) --version | tail -n 1))
 CUDA_VERSION := $(shell $(NVCC) --version | grep -oP 'release (\K[0-9]+\.[0-9])')
